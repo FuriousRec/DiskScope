@@ -1,0 +1,7 @@
+public enum CleanupAction {
+    DO_NOT_DELETE,
+    DELETE_WITH_CONFIRMATION,
+    SAFE_TO_REVIEW,
+    SAFE_TO_CLEAN,
+    REVIEW_MANUALLY
+}
