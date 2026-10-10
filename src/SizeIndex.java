@@ -1,9 +1,11 @@
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Set;
 
 public class SizeIndex {
 
@@ -71,12 +73,20 @@ public class SizeIndex {
                     entry.parentId();
 
             /*
-             * 256 is just a safety guard against
-             * corrupt/circular parent relationships.
+             * Corrupt MFT data can contain parent cycles. Track visited
+             * directory IDs so each file contributes to a folder at most once.
+             * The depth limit remains a guard against unreasonably deep chains.
              */
+            Set<Long> visitedParentIds =
+                    new HashSet<>();
+
             for (int depth = 0;
                  depth < 256;
                  depth++) {
+
+                if (!visitedParentIds.add(parentId)) {
+                    break;
+                }
 
                 MftEntry parent =
                         entries.get(parentId);
