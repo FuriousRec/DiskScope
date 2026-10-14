@@ -375,17 +375,19 @@ mvn clean package
 
 ## Testing
 
-The cross-platform unit tests exercise the in-memory `SizeIndex` without
-requiring NTFS access. They cover normal ancestor aggregation, corrupt parent
-cycles, unresolved file sizes, and bounded largest-file selection.
+The test suite exercises the in-memory `SizeIndex` without requiring NTFS
+access. It covers normal ancestor aggregation, corrupt parent cycles, unresolved
+file sizes, and bounded largest-file selection. Windows-specific tests also
+verify that cleanup classifications match complete path segments and do not
+mistake lookalike names such as `DownloadsBackup` for known locations.
 
 ```powershell
 mvn verify
 ```
 
-GitHub Actions compiles the application and runs the tests on Java 21 for every
-push and pull request. Native NTFS access still requires Windows and is outside
-this unit-test suite.
+GitHub Actions compiles the application and runs the tests on Java 21 on both
+Ubuntu and Windows for every push and pull request. Native NTFS access still
+requires Windows and is outside this unit-test suite.
 
 ---
 
