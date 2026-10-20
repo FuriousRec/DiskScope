@@ -9,10 +9,23 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.io.TempDirFactory;
+import org.junit.jupiter.api.extension.AnnotatedElementContext;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 class StorageScannerTest {
-    @TempDir
+    @TempDir(factory = WorkingDirectoryTempFactory.class)
     Path root;
+
+    // Relative paths cannot cross Windows drives. JUnit still owns cleanup.
+    public static class WorkingDirectoryTempFactory implements TempDirFactory {
+        @Override
+        public Path createTempDirectory(
+                AnnotatedElementContext elementContext,
+                ExtensionContext extensionContext) throws IOException {
+            return Files.createTempDirectory(Path.of("").toAbsolutePath(), "scanner-test-");
+        }
+    }
 
     @BeforeEach
     @AfterEach
