@@ -241,40 +241,23 @@ public class StorageScanner {
 
         // ANCHOR: Invalidate Cache
         public static void invalidateCache(File item) {
+                java.nio.file.Path changedPath =
+                                item.toPath().toAbsolutePath().normalize();
 
-                String deletedPath = item.getAbsolutePath().toLowerCase();
+                // A change affects cached descendants and every cached ancestor.
+                // Path comparisons respect directory boundaries and platform case rules.
+                // No filesystem lookup is needed: the item may already be deleted.
+                folderSizeCache.keySet().removeIf(
+                                cachedPath -> overlaps(cachedPath, changedPath));
+                fileScanCache.keySet().removeIf(
+                                cachedPath -> overlaps(cachedPath, changedPath));
+        }
 
-                // Remove the deleted item and anything cached inside it
-                folderSizeCache.keySet().removeIf(cachedPath -> {
-
-                        String path = cachedPath.toLowerCase();
-
-                        return path.equals(deletedPath)
-                                        || path.startsWith(
-                                                        deletedPath + File.separator);
-                });
-                fileScanCache.keySet().removeIf(cachedPath -> {
-
-                        String path = cachedPath.toLowerCase();
-
-                        return path.equals(deletedPath)
-                                        || path.startsWith(
-                                                        deletedPath + File.separator);
-                });
-
-                // Parent folder sizes are now outdated too
-                File parent = item.getParentFile();
-
-                while (parent != null) {
-
-                        String parentPath = parent.getAbsolutePath();
-
-                        folderSizeCache.keySet().removeIf(
-                                        cachedPath -> cachedPath.equalsIgnoreCase(parentPath));
-
-                        fileScanCache.remove(parentPath);
-
-                        parent = parent.getParentFile();
-                }
+        private static boolean overlaps(
+                        String cachedPath,
+                        java.nio.file.Path changedPath) {
+                java.nio.file.Path cached =
+                                java.nio.file.Path.of(cachedPath).toAbsolutePath().normalize();
+                return cached.startsWith(changedPath) || changedPath.startsWith(cached);
         }
 }
