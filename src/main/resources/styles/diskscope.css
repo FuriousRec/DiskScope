@@ -204,6 +204,11 @@
     -fx-alignment: center-left;
 }
 
+.result-filter {
+    -fx-pref-width: 260;
+    -fx-padding: 7 10 8 10;
+}
+
 .view-tab {
     -fx-padding: 8 13 9 13;
     -fx-background-color: rgba(255, 255, 255, 0.04);
