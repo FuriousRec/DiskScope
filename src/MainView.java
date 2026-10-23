@@ -14,6 +14,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TitledPane;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -41,6 +42,7 @@ public class MainView extends StackPane implements NavigationController.Listener
     private final Label statusLabel = new Label("Idle");
     private final Label scannerModeLabel = new Label("Scanner: --");
     private final Label tableCaption = new Label("Run a scan to browse storage.");
+    private final TextField resultFilter = new TextField();
     private final Label propertyBadge = new Label("PROPERTY OF\nFURIOUSREC");
     private final ProgressIndicator progressIndicator = new ProgressIndicator();
     private final PacmanLoader pacmanLoader = new PacmanLoader();
@@ -201,10 +203,15 @@ public class MainView extends StackPane implements NavigationController.Listener
         largestTab.getStyleClass().add("view-tab");
         cleanupTab.getStyleClass().add("view-tab");
         tableCaption.getStyleClass().add("section-caption");
+        resultFilter.setPromptText("Filter results...");
+        resultFilter.getStyleClass().add("result-filter");
+        resultFilter.textProperty().addListener(
+                (observable, previous, current) -> renderActiveTable());
 
         HBox tabSpacer = new HBox();
         HBox.setHgrow(tabSpacer, Priority.ALWAYS);
-        tabRow.getChildren().addAll(browseTab, largestTab, cleanupTab, tabSpacer, tableCaption);
+        tabRow.getChildren().addAll(
+                browseTab, largestTab, cleanupTab, tabSpacer, tableCaption, resultFilter);
 
         VBox.setVgrow(storageTable, Priority.ALWAYS);
 
@@ -294,8 +301,14 @@ public class MainView extends StackPane implements NavigationController.Listener
             case CLEANUP -> "Protected/system items are hidden from cleanup.";
         };
 
+        List<StorageItem> filteredItems = StorageItemFilter.filter(items, resultFilter.getText());
+        if (!resultFilter.getText().isBlank()) {
+            caption += " " + filteredItems.size() + " match"
+                    + (filteredItems.size() == 1 ? "." : "es.");
+        }
+
         tableCaption.setText(caption);
-        storageTable.setItems(items);
+        storageTable.setItems(filteredItems);
     }
 
     private void showDetails(StorageItem item) {

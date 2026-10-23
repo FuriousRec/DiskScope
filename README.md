@@ -50,6 +50,7 @@ That is roughly a **75x improvement** for the initial full-drive scan on the dev
 - RAM-backed folder browsing after indexing
 - Folder-size aggregation
 - Largest-files view
+- Live multi-term filtering by name, path, category, and recommendation
 - Cleanup recommendations
 - Storage classification
 - Protected Windows system paths
@@ -377,9 +378,10 @@ mvn clean package
 
 The test suite exercises the in-memory `SizeIndex` without requiring NTFS
 access. It covers normal ancestor aggregation, corrupt parent cycles, unresolved
-file sizes, and bounded largest-file selection. Windows-specific tests also
-verify that cleanup classifications match complete path segments and do not
-mistake lookalike names such as `DownloadsBackup` for known locations.
+file sizes, bounded largest-file selection, and the headless result-filtering
+logic used by the JavaFX interface. Windows-specific tests also verify that
+cleanup classifications match complete path segments and do not mistake
+lookalike names such as `DownloadsBackup` for known locations.
 
 ```powershell
 mvn verify
