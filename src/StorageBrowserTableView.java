@@ -1,3 +1,4 @@
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 
@@ -28,8 +29,12 @@ public class StorageBrowserTableView extends VBox {
         VBox.setVgrow(table, Priority.ALWAYS);
     }
 
-    public void setItems(java.util.List<StorageItem> items) {
+    public void setItems(List<StorageItem> items) {
         table.setItems(FXCollections.observableArrayList(items));
+    }
+
+    public List<StorageItem> items() {
+        return List.copyOf(table.getItems());
     }
 
     public void setDetailsHandler(Consumer<StorageItem> detailsHandler) {
