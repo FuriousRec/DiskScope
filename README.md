@@ -51,6 +51,7 @@ That is roughly a **75x improvement** for the initial full-drive scan on the dev
 - Folder-size aggregation
 - Largest-files view
 - Live multi-term filtering by name, path, category, and recommendation
+- CSV export of the currently visible, filtered results
 - Cleanup recommendations
 - Storage classification
 - Protected Windows system paths
@@ -378,8 +379,10 @@ mvn clean package
 
 The test suite exercises the in-memory `SizeIndex` without requiring NTFS
 access. It covers normal ancestor aggregation, corrupt parent cycles, unresolved
-file sizes, bounded largest-file selection, and the headless result-filtering
-logic used by the JavaFX interface. Windows-specific tests also verify that
+file sizes, bounded largest-file selection, the headless result-filtering
+logic, and safe CSV export used by the JavaFX interface. CSV tests cover
+quoting, Unicode, UTF-8 output, and spreadsheet-formula neutralization.
+Windows-specific tests also verify that
 cleanup classifications match complete path segments and do not mistake
 lookalike names such as `DownloadsBackup` for known locations.
 

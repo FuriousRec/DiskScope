@@ -1,4 +1,5 @@
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
@@ -22,6 +23,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 
 public class MainView extends StackPane implements NavigationController.Listener {
 
@@ -56,6 +58,7 @@ public class MainView extends StackPane implements NavigationController.Listener
     private final Button browseTab = new Button("Browse");
     private final Button largestTab = new Button("Largest Files");
     private final Button cleanupTab = new Button("Cleanup");
+    private final Button exportResultsButton = new Button("Export CSV");
 
     private NavigationController.ScanSnapshot currentSnapshot;
     private ViewMode viewMode = ViewMode.BROWSE;
@@ -207,11 +210,14 @@ public class MainView extends StackPane implements NavigationController.Listener
         resultFilter.getStyleClass().add("result-filter");
         resultFilter.textProperty().addListener(
                 (observable, previous, current) -> renderActiveTable());
+        exportResultsButton.getStyleClass().addAll("action-button", "secondary-action");
+        exportResultsButton.setDisable(true);
 
         HBox tabSpacer = new HBox();
         HBox.setHgrow(tabSpacer, Priority.ALWAYS);
         tabRow.getChildren().addAll(
-                browseTab, largestTab, cleanupTab, tabSpacer, tableCaption, resultFilter);
+                browseTab, largestTab, cleanupTab, tabSpacer,
+                tableCaption, resultFilter, exportResultsButton);
 
         VBox.setVgrow(storageTable, Priority.ALWAYS);
 
@@ -238,6 +244,7 @@ public class MainView extends StackPane implements NavigationController.Listener
         browseTab.setOnAction(ignored -> switchMode(ViewMode.BROWSE));
         largestTab.setOnAction(ignored -> switchMode(ViewMode.LARGEST));
         cleanupTab.setOnAction(ignored -> switchMode(ViewMode.CLEANUP));
+        exportResultsButton.setOnAction(ignored -> exportVisibleResults());
 
         fullScanButton.setOnAction(ignored -> {
             File selectedDrive = drivePicker.getValue();
@@ -283,6 +290,7 @@ public class MainView extends StackPane implements NavigationController.Listener
     private void renderActiveTable() {
         if (currentSnapshot == null) {
             storageTable.setItems(List.of());
+            exportResultsButton.setDisable(true);
             return;
         }
 
@@ -309,6 +317,7 @@ public class MainView extends StackPane implements NavigationController.Listener
 
         tableCaption.setText(caption);
         storageTable.setItems(filteredItems);
+        exportResultsButton.setDisable(filteredItems.isEmpty());
     }
 
     private void showDetails(StorageItem item) {
@@ -354,6 +363,38 @@ public class MainView extends StackPane implements NavigationController.Listener
         segment.getStyleClass().add("breadcrumb-button");
         segment.setOnAction(ignored -> navigationController.openFolder(target));
         breadcrumbBar.getChildren().add(segment);
+    }
+
+    private void exportVisibleResults() {
+        List<StorageItem> visibleItems = storageTable.items();
+        if (visibleItems.isEmpty()) {
+            showWarning("Nothing to export", "The current view has no visible rows.");
+            return;
+        }
+
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Export visible DiskScope results");
+        chooser.setInitialFileName("diskscope-results.csv");
+        chooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("CSV files", "*.csv"));
+
+        File selected = chooser.showSaveDialog(getScene().getWindow());
+        if (selected == null) {
+            return;
+        }
+
+        try {
+            StorageItemCsvExporter.write(selected.toPath(), visibleItems);
+            log("Exported " + visibleItems.size() + " visible rows to " + selected.getName());
+            showInfo(
+                    "Export complete",
+                    visibleItems.size() + " visible row"
+                            + (visibleItems.size() == 1 ? " was" : "s were")
+                            + " exported to:\n"
+                            + selected.getAbsolutePath());
+        } catch (IOException exception) {
+            showWarning("Export failed", exception.getMessage());
+        }
     }
 
     private void chooseFolder() {
@@ -421,6 +462,7 @@ public class MainView extends StackPane implements NavigationController.Listener
         refreshButton.setDisable(busy);
         backButton.setDisable(busy);
         upButton.setDisable(busy);
+        exportResultsButton.setDisable(busy || storageTable.items().isEmpty());
 
         if (busy) {
             pacmanLoader.play();
