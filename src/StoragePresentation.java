@@ -52,21 +52,39 @@ public final class StoragePresentation {
             return true;
         }
 
-        String path = item.getAbsolutePath().replace('/', '\\').toLowerCase(Locale.ROOT);
-        String name = item.getName().toLowerCase(Locale.ROOT);
         String systemDrive = System.getenv("SystemDrive");
-        String drivePrefix = systemDrive == null || systemDrive.isBlank()
-                ? "c:"
-                : systemDrive.toLowerCase(Locale.ROOT);
+        File driveRoot = new File(
+                systemDrive == null || systemDrive.isBlank()
+                        ? "C:\\"
+                        : systemDrive + "\\");
 
-        return path.equals(drivePrefix + "\\pagefile.sys")
-                || path.equals(drivePrefix + "\\hiberfil.sys")
-                || path.equals(drivePrefix + "\\swapfile.sys")
-                || path.startsWith(drivePrefix + "\\system volume information")
-                || path.startsWith(drivePrefix + "\\recovery")
-                || name.startsWith("dumpstack")
-                || path.contains("\\windows\\")
-                || path.equals(drivePrefix + "\\windows");
+        return isInsideOrSame(item, new File(driveRoot, "System Volume Information"))
+                || isInsideOrSame(item, new File(driveRoot, "Recovery"))
+                || isSamePath(item, new File(driveRoot, "pagefile.sys"))
+                || isSamePath(item, new File(driveRoot, "hiberfil.sys"))
+                || isSamePath(item, new File(driveRoot, "swapfile.sys"))
+                || isRootDumpStackFile(item, driveRoot);
+    }
+
+    private static boolean isInsideOrSame(File item, File protectedLocation) {
+        return item.toPath()
+                .toAbsolutePath()
+                .normalize()
+                .startsWith(protectedLocation.toPath().toAbsolutePath().normalize());
+    }
+
+    private static boolean isSamePath(File first, File second) {
+        return first.toPath()
+                .toAbsolutePath()
+                .normalize()
+                .equals(second.toPath().toAbsolutePath().normalize());
+    }
+
+    private static boolean isRootDumpStackFile(File item, File driveRoot) {
+        File parent = item.getParentFile();
+        return parent != null
+                && isSamePath(parent, driveRoot)
+                && item.getName().toLowerCase(Locale.ROOT).startsWith("dumpstack");
     }
 
     private static boolean canShowAsCleanupCandidate(StorageType storageType) {

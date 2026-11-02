@@ -382,9 +382,11 @@ access. It covers normal ancestor aggregation, corrupt parent cycles, unresolved
 file sizes, bounded largest-file selection, the headless result-filtering
 logic, and safe CSV export used by the JavaFX interface. CSV tests cover
 quoting, Unicode, UTF-8 output, and spreadsheet-formula neutralization.
-Windows-specific tests also verify that
-cleanup classifications match complete path segments and do not mistake
-lookalike names such as `DownloadsBackup` for known locations.
+Windows-specific tests also verify that cleanup classifications and the
+JavaFX protection badges match complete path boundaries. Lookalike locations
+such as `RecoveryBackup`, `System Volume InformationBackup`, and user files
+whose names begin with `dumpstack` remain reviewable instead of being
+misidentified as protected Windows data.
 
 ```powershell
 mvn verify
