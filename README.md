@@ -50,7 +50,8 @@ That is roughly a **75x improvement** for the initial full-drive scan on the dev
 - RAM-backed folder browsing after indexing
 - Folder-size aggregation
 - Largest-files view
-- Live multi-term filtering by name, path, category, and recommendation
+- Live multi-term filtering by name, path, category, recommendation, and
+  human-readable size predicates such as `size:>=500MB`
 - CSV export of the currently visible, filtered results
 - Cleanup recommendations
 - Storage classification
@@ -366,6 +367,22 @@ A successful native scan displays `FAST_NTFS`. If raw volume access fails, DiskS
 
 ---
 
+## Filtering results
+
+The result box accepts ordinary case-insensitive words plus size predicates.
+Predicates use the same 1024-based units as the table and can be combined with
+each other or with text:
+
+```text
+video size:>=500MB
+temp size:>1GB size:<=10GB
+```
+
+Supported operators are `>`, `>=`, `<`, and `<=`; supported units are `B`,
+`KB`, `MB`, `GB`, and `TB`. CSV export uses the resulting visible rows.
+
+---
+
 ## Building
 
 ```powershell
@@ -380,7 +397,8 @@ mvn clean package
 The test suite exercises the in-memory `SizeIndex` without requiring NTFS
 access. It covers normal ancestor aggregation, corrupt parent cycles, unresolved
 file sizes, bounded largest-file selection, the headless result-filtering
-logic, and safe CSV export used by the JavaFX interface. CSV tests cover
+logic (including decimal size thresholds and inclusive/exclusive boundaries),
+and safe CSV export used by the JavaFX interface. CSV tests cover
 quoting, Unicode, UTF-8 output, and spreadsheet-formula neutralization.
 Windows-specific tests also verify that cleanup classifications and the
 JavaFX protection badges match complete path boundaries. Lookalike locations
