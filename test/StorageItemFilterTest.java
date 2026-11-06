@@ -84,8 +84,60 @@ class StorageItemFilterTest {
                 "archive document").isEmpty());
     }
 
+    @Test
+    void combinesHumanReadableSizeConstraintsWithTextTerms() {
+        StorageItem smallLog = item(
+                "C:\\Temp\\small.log", 512L << 10,
+                StorageType.TEMPORARY_DATA, CleanupAction.SAFE_TO_CLEAN,
+                "Temp", "Safe");
+        StorageItem largeArchive = item(
+                "C:\\Temp\\archive.zip", 2L << 20,
+                StorageType.TEMPORARY_DATA, CleanupAction.SAFE_TO_CLEAN,
+                "Temp", "Safe");
+        StorageItem video = item(
+                "C:\\Users\\test\\Videos\\movie.mp4", 2L << 30,
+                StorageType.USER_DATA, CleanupAction.SAFE_TO_REVIEW,
+                "User", "Review");
+
+        assertEquals(
+                List.of(largeArchive),
+                StorageItemFilter.filter(
+                        List.of(smallLog, largeArchive, video),
+                        "TEMP size:>=1mb size:<1GB"));
+    }
+
+    @Test
+    void respectsDecimalAndInclusiveSizeBoundaries() {
+        long oneAndHalfGiB = 1536L << 20;
+        StorageItem image = item(
+                "C:\\Users\\test\\Pictures\\disk.img", oneAndHalfGiB,
+                StorageType.USER_DATA, CleanupAction.SAFE_TO_REVIEW,
+                "User", "Review");
+
+        assertEquals(List.of(image),
+                StorageItemFilter.filter(List.of(image), "size:>=1.5GB"));
+        assertEquals(List.of(image),
+                StorageItemFilter.filter(List.of(image), "size:<=1536mb"));
+        assertTrue(StorageItemFilter.filter(
+                List.of(image), "size:>1.5GB").isEmpty());
+        assertTrue(StorageItemFilter.filter(
+                List.of(image), "size:<1536MB").isEmpty());
+    }
+
     private static StorageItem item(
             String path,
+            StorageType storageType,
+            CleanupAction cleanupAction,
+            String typeLabel,
+            String recommendation) {
+
+        return item(path, 100, storageType, cleanupAction,
+                typeLabel, recommendation);
+    }
+
+    private static StorageItem item(
+            String path,
+            long size,
             StorageType storageType,
             CleanupAction cleanupAction,
             String typeLabel,
@@ -95,7 +147,7 @@ class StorageItemFilterTest {
         return new StorageItem(
                 file,
                 file.getName(),
-                100,
+                size,
                 false,
                 storageType,
                 cleanupAction,
