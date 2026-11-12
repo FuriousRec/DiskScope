@@ -1,4 +1,5 @@
 import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -51,6 +52,10 @@ public class StorageScanner {
         // ANCHOR: Calculate Folder Size
         public static long calculateFolderSize(File folder) {
 
+                if (isSymbolicLink(folder)) {
+                        return 0;
+                }
+
                 String folderPath = folder.getAbsolutePath();
 
                 // Use cache first
@@ -76,6 +81,10 @@ public class StorageScanner {
                 }
 
                 for (File item : contents) {
+
+                        if (isSymbolicLink(item)) {
+                                continue;
+                        }
 
                         if (item.isFile()) {
                                 totalSize += item.length();
@@ -107,6 +116,10 @@ public class StorageScanner {
                 }
 
                 for (File item : items) {
+
+                        if (isSymbolicLink(item)) {
+                                continue;
+                        }
 
                         if (item.isDirectory()) {
 
@@ -142,6 +155,10 @@ public class StorageScanner {
 
                 for (File item : items) {
 
+                        if (isSymbolicLink(item)) {
+                                continue;
+                        }
+
                         if (item.isFile()) {
 
                                 files.add(
@@ -165,6 +182,10 @@ public class StorageScanner {
                         File folder,
                         List<FileInfo> foundFiles) {
 
+                if (isSymbolicLink(folder)) {
+                        return;
+                }
+
                 File[] contents = listFilesSafely(folder);
 
                 if (contents == null) {
@@ -172,6 +193,10 @@ public class StorageScanner {
                 }
 
                 for (File item : contents) {
+
+                        if (isSymbolicLink(item)) {
+                                continue;
+                        }
 
                         if (item.isFile()) {
 
@@ -188,6 +213,10 @@ public class StorageScanner {
                                                 foundFiles);
                         }
                 }
+        }
+
+        private static boolean isSymbolicLink(File item) {
+                return Files.isSymbolicLink(item.toPath());
         }
 
         // ANCHOR: Scan All Files

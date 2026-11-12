@@ -47,6 +47,7 @@ That is roughly a **75x improvement** for the initial full-drive scan on the dev
 
 - Fast NTFS/MFT drive scanning
 - Java fallback scanner when raw NTFS access is unavailable
+- Cycle-safe fallback traversal that does not follow symbolic links
 - RAM-backed folder browsing after indexing
 - Folder-size aggregation
 - Largest-files view

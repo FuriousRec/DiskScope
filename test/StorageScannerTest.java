@@ -1,9 +1,13 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,5 +85,29 @@ class StorageScannerTest {
 
         assertEquals(0, StorageScanner.calculateFolderSize(root.toFile()));
         assertTrue(StorageScanner.scanAllFiles(root.toFile()).isEmpty());
+    }
+
+    @Test
+    void symbolicLinksDoNotCreateCyclesOrDuplicateDiskUsage() throws IOException {
+        Path nested = Files.createDirectories(root.resolve("nested"));
+        Path file = Files.write(nested.resolve("data.bin"), new byte[7]);
+        Path ancestorLink = nested.resolve("back-to-root");
+        Path fileLink = root.resolve("data-link.bin");
+
+        try {
+            Files.createSymbolicLink(ancestorLink, root);
+            Files.createSymbolicLink(fileLink, file);
+        } catch (UnsupportedOperationException | SecurityException | IOException exception) {
+            assumeTrue(false, "Symbolic links are unavailable: " + exception.getMessage());
+        }
+
+        assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
+            assertEquals(7, StorageScanner.calculateFolderSize(root.toFile()));
+            assertEquals(
+                    List.of(file.toAbsolutePath().toString()),
+                    StorageScanner.scanAllFiles(root.toFile()).stream()
+                            .map(FileInfo::path)
+                            .toList());
+        });
     }
 }
