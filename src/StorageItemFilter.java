@@ -7,6 +7,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class StorageItemFilter {
+    private static final String SIZE_HELP =
+            "Use size: followed by >, >=, <, or <=, then a number and "
+                    + "B, KB, MB, GB, or TB (for example size:>=500MB).";
     private static final Pattern SIZE_TERM = Pattern.compile(
             "(?i)^size:(<=|>=|<|>)(\\d+(?:\\.\\d+)?)(b|kb|mb|gb|tb)$");
 
@@ -19,21 +22,24 @@ public final class StorageItemFilter {
 
         Objects.requireNonNull(items, "items");
 
-        String normalizedQuery = normalize(query);
-        if (normalizedQuery.isEmpty()) {
+        String strippedQuery = query == null ? "" : query.strip();
+        if (strippedQuery.isEmpty()) {
             return List.copyOf(items);
         }
 
         List<String> textTerms = new ArrayList<>();
         List<SizeConstraint> sizeConstraints = new ArrayList<>();
-        for (String term : normalizedQuery.split("\\s+")) {
+        for (String term : strippedQuery.split("\\s+")) {
             Matcher matcher = SIZE_TERM.matcher(term);
             if (matcher.matches()) {
                 sizeConstraints.add(new SizeConstraint(
                         matcher.group(1),
                         bytes(matcher.group(2), matcher.group(3))));
+            } else if (term.regionMatches(true, 0, "size:", 0, 5)) {
+                throw new IllegalArgumentException(
+                        "Invalid size filter \"" + term + "\". " + SIZE_HELP);
             } else {
-                textTerms.add(term);
+                textTerms.add(normalize(term));
             }
         }
 

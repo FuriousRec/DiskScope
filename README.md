@@ -380,7 +380,9 @@ temp size:>1GB size:<=10GB
 ```
 
 Supported operators are `>`, `>=`, `<`, and `<=`; supported units are `B`,
-`KB`, `MB`, `GB`, and `TB`. CSV export uses the resulting visible rows.
+`KB`, `MB`, `GB`, and `TB`. A malformed `size:` predicate now displays an
+actionable example in the result view instead of silently looking like a
+valid filter with no matches. CSV export uses the resulting visible rows.
 
 ---
 
@@ -399,6 +401,7 @@ The test suite exercises the in-memory `SizeIndex` without requiring NTFS
 access. It covers normal ancestor aggregation, corrupt parent cycles, unresolved
 file sizes, bounded largest-file selection, the headless result-filtering
 logic (including decimal size thresholds and inclusive/exclusive boundaries),
+malformed size-predicate feedback,
 and safe CSV export used by the JavaFX interface. CSV tests cover
 quoting, Unicode, UTF-8 output, and spreadsheet-formula neutralization.
 Windows-specific tests also verify that cleanup classifications and the

@@ -309,7 +309,18 @@ public class MainView extends StackPane implements NavigationController.Listener
             case CLEANUP -> "Protected/system items are hidden from cleanup.";
         };
 
-        List<StorageItem> filteredItems = StorageItemFilter.filter(items, resultFilter.getText());
+        final List<StorageItem> filteredItems;
+        try {
+            filteredItems = StorageItemFilter.filter(
+                    items,
+                    resultFilter.getText());
+        } catch (IllegalArgumentException exception) {
+            tableCaption.setText(exception.getMessage());
+            storageTable.setItems(List.of());
+            exportResultsButton.setDisable(true);
+            return;
+        }
+
         if (!resultFilter.getText().isBlank()) {
             caption += " " + filteredItems.size() + " match"
                     + (filteredItems.size() == 1 ? "." : "es.");
