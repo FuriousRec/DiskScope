@@ -1,5 +1,6 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -122,6 +123,43 @@ class StorageItemFilterTest {
                 List.of(image), "size:>1.5GB").isEmpty());
         assertTrue(StorageItemFilter.filter(
                 List.of(image), "size:<1536MB").isEmpty());
+    }
+
+    @Test
+    void rejectsMalformedSizePredicatesWithActionableGuidance() {
+        StorageItem archive = item(
+                "C:\\Temp\\archive.zip", 2L << 20,
+                StorageType.TEMPORARY_DATA, CleanupAction.SAFE_TO_CLEAN,
+                "Temp", "Safe");
+
+        for (String query : List.of(
+                "size:=>1GB",
+                "size:1GB",
+                "size:>=GB",
+                "size:>=-1GB",
+                "size:>=1XB")) {
+
+            IllegalArgumentException exception = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> StorageItemFilter.filter(
+                            List.of(archive), query));
+
+            assertTrue(exception.getMessage().contains(query));
+            assertTrue(exception.getMessage().contains(
+                    "for example size:>=500MB"));
+        }
+    }
+
+    @Test
+    void keepsNonPredicateWordsContainingSizeSearchable() {
+        StorageItem notes = item(
+                "C:\\Users\\test\\Documents\\size-notes.txt",
+                StorageType.USER_DATA, CleanupAction.SAFE_TO_REVIEW,
+                "User", "Review");
+
+        assertEquals(
+                List.of(notes),
+                StorageItemFilter.filter(List.of(notes), "size-notes"));
     }
 
     private static StorageItem item(
