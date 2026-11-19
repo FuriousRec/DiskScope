@@ -29,6 +29,7 @@ public final class StorageItemFilter {
 
         List<String> textTerms = new ArrayList<>();
         List<SizeConstraint> sizeConstraints = new ArrayList<>();
+        List<String> extensions = new ArrayList<>();
         for (String term : strippedQuery.split("\\s+")) {
             Matcher matcher = SIZE_TERM.matcher(term);
             if (matcher.matches()) {
@@ -38,20 +39,39 @@ public final class StorageItemFilter {
             } else if (term.regionMatches(true, 0, "size:", 0, 5)) {
                 throw new IllegalArgumentException(
                         "Invalid size filter \"" + term + "\". " + SIZE_HELP);
+            } else if (term.regionMatches(true, 0, "ext:", 0, 4)) {
+                String extension = normalize(term.substring(4));
+                if (extension.startsWith(".")) {
+                    extension = extension.substring(1);
+                }
+                if (!extension.matches("[a-z0-9_-]+(?:\\.[a-z0-9_-]+)*")) {
+                    throw new IllegalArgumentException(
+                            "Invalid extension filter \"" + term
+                                    + "\". Use ext:pdf or ext:tar.gz (an optional leading dot is allowed).");
+                }
+                extensions.add("." + extension);
             } else {
                 textTerms.add(normalize(term));
             }
         }
 
         return items.stream()
-                .filter(item -> matchesAll(item, textTerms, sizeConstraints))
+                .filter(item -> matchesAll(item, textTerms, sizeConstraints, extensions))
                 .toList();
     }
 
     private static boolean matchesAll(
             StorageItem item,
             List<String> textTerms,
-            List<SizeConstraint> sizeConstraints) {
+            List<SizeConstraint> sizeConstraints,
+            List<String> extensions) {
+
+        for (String extension : extensions) {
+            // Match the file's name, never a parent path or a dotted directory.
+            if (item.directory() || !normalize(item.name()).endsWith(extension)) {
+                return false;
+            }
+        }
 
         String searchable = normalize(String.join(" ",
                 item.name(),

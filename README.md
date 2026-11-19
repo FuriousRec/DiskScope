@@ -51,7 +51,7 @@ That is roughly a **75x improvement** for the initial full-drive scan on the dev
 - RAM-backed folder browsing after indexing
 - Folder-size aggregation
 - Largest-files view
-- Live multi-term filtering by name, path, category, recommendation, and
+- Live multi-term filtering by name, path, category, recommendation, file extension, and
   human-readable size predicates such as `size:>=500MB`
 - CSV export of the currently visible, filtered results
 - Cleanup recommendations
@@ -377,7 +377,17 @@ each other or with text:
 ```text
 video size:>=500MB
 temp size:>1GB size:<=10GB
+ext:pdf size:>=1MB
+backup ext:tar.gz
 ```
+
+Use `ext:pdf` or `ext:.pdf` to match file names ending in `.pdf`, ignoring
+case. Directories and parent paths do not match extension predicates.
+Compound suffixes such as `ext:tar.gz` are supported. Suffixes accept letters
+`a-z`, digits, underscores and hyphens, with dots between components; wildcards
+and comma-separated alternatives are rejected with guidance. Every term must
+match, including when multiple `ext:` predicates are supplied. The filter acts
+on the current view's rows, and CSV export includes only matching rows.
 
 Supported operators are `>`, `>=`, `<`, and `<=`; supported units are `B`,
 `KB`, `MB`, `GB`, and `TB`. A malformed `size:` predicate now displays an
@@ -401,7 +411,7 @@ The test suite exercises the in-memory `SizeIndex` without requiring NTFS
 access. It covers normal ancestor aggregation, corrupt parent cycles, unresolved
 file sizes, bounded largest-file selection, the headless result-filtering
 logic (including decimal size thresholds and inclusive/exclusive boundaries),
-malformed size-predicate feedback,
+malformed size-predicate feedback, file-only extension and compound-suffix filtering,
 and safe CSV export used by the JavaFX interface. CSV tests cover
 quoting, Unicode, UTF-8 output, and spreadsheet-formula neutralization.
 Windows-specific tests also verify that cleanup classifications and the
