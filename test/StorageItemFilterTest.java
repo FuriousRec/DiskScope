@@ -1,4 +1,5 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -160,6 +161,63 @@ class StorageItemFilterTest {
         assertEquals(
                 List.of(notes),
                 StorageItemFilter.filter(List.of(notes), "size-notes"));
+    }
+
+    @Test
+    void extensionMatchesFileNamesOnlyAndPreservesOrder() {
+        StorageItem first = item("Annual.PDF", 100, false);
+        StorageItem second = item("notes.pdf", 200, false);
+        StorageItem backup = item("notes.pdf.bak", 300, false);
+        StorageItem inPdfFolder = item("notes.txt", 400, false);
+        StorageItem directory = item("archive.pdf", 500, true);
+        List<StorageItem> items = List.of(first, backup, inPdfFolder, directory, second);
+
+        assertEquals(List.of(first, second), StorageItemFilter.filter(items, "EXT:.PdF"));
+        assertEquals(List.of(first, second), StorageItemFilter.filter(items, "ext:pdf"));
+    }
+
+    @Test
+    void extensionCombinesWithTextAndSizeAndFlowsIntoCsvExport() {
+        StorageItem annual = item("Annual.PDF", 2L << 20, false);
+        StorageItem draft = item("Annual-draft.pdf", 100, false);
+        StorageItem notes = item("notes.pdf", 3L << 20, false);
+        List<StorageItem> visible = StorageItemFilter.filter(
+                List.of(annual, draft, notes), "annual ext:pdf size:>=1MB");
+
+        assertEquals(List.of(annual), visible);
+        String csv = StorageItemCsvExporter.toCsv(visible);
+        assertTrue(csv.contains("\"Annual.PDF\""));
+        assertFalse(csv.contains("Annual-draft.pdf"));
+        assertFalse(csv.contains("notes.pdf"));
+    }
+
+    @Test
+    void supportsCompoundSuffixesAndRequiresAllExtensionPredicates() {
+        StorageItem archive = item("backup.TAR.GZ", 100, false);
+        StorageItem gzip = item("backup.gz", 100, false);
+        List<StorageItem> items = List.of(archive, gzip);
+
+        assertEquals(List.of(archive), StorageItemFilter.filter(items, "ext:tar.gz ext:gz"));
+        assertEquals(items, StorageItemFilter.filter(items, "ext:gz"));
+        assertTrue(StorageItemFilter.filter(items, "ext:gz ext:zip").isEmpty());
+    }
+
+    @Test
+    void rejectsMalformedExtensionPredicatesEvenWithNoRows() {
+        for (String query : List.of("ext:", "ext:.", "ext:*.pdf", "ext:../pdf",
+                "ext:pdf.", "ext:tar..gz", "ext:pdf,txt")) {
+            IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                    () -> StorageItemFilter.filter(List.of(), query));
+            assertTrue(error.getMessage().contains(query));
+            assertTrue(error.getMessage().contains("Use ext:pdf"));
+        }
+    }
+
+    private static StorageItem item(
+            String name, long size, boolean directory) {
+        return new StorageItem(new File("reports.pdf", name), name, size, directory,
+                StorageType.USER_DATA, CleanupAction.SAFE_TO_REVIEW,
+                "User", "Review", "test-badge", true, false);
     }
 
     private static StorageItem item(

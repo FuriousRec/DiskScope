@@ -206,7 +206,7 @@ public class MainView extends StackPane implements NavigationController.Listener
         largestTab.getStyleClass().add("view-tab");
         cleanupTab.getStyleClass().add("view-tab");
         tableCaption.getStyleClass().add("section-caption");
-        resultFilter.setPromptText("Filter results...  size:>1GB");
+        resultFilter.setPromptText("Filter... ext:pdf size:>1MB");
         resultFilter.getStyleClass().add("result-filter");
         resultFilter.textProperty().addListener(
                 (observable, previous, current) -> renderActiveTable());
