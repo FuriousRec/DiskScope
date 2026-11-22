@@ -130,10 +130,11 @@ public class NavigationController {
                 browseItems.addAll(directFiles);
 
                 updateMessage("Finding safe large files");
-                List<StorageItem> largestFiles = DiskScanner.scanLargestFiles(targetFolder, 20)
+                List<StorageItem> largestFiles = DiskScanner.scanLargestFiles(
+                                targetFolder, 20,
+                                file -> StoragePresentation.isCleanupCandidate(new File(file.path())))
                         .stream()
                         .map(StorageItem::fromFile)
-                        .filter(StorageItem::cleanupCandidate)
                         .sorted(Comparator.comparingLong(StorageItem::sizeInBytes).reversed())
                         .toList();
 

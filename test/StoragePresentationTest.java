@@ -43,6 +43,7 @@ class StoragePresentationTest {
         assertEquals(StorageType.PROTECTED_SYSTEM, view.storageType(), path);
         assertEquals(CleanupAction.DO_NOT_DELETE, view.cleanupAction(), path);
         assertFalse(view.cleanupCandidate(), path);
+        assertFalse(StoragePresentation.isCleanupCandidate(new File(path)), path);
         assertFalse(view.canDelete(), path);
     }
 
@@ -51,6 +52,8 @@ class StoragePresentationTest {
 
         assertFalse(view.protectedSystem(), path);
         assertFalse(view.storageType() == StorageType.PROTECTED_SYSTEM, path);
+        assertEquals(view.cleanupCandidate(),
+                StoragePresentation.isCleanupCandidate(new File(path)), path);
     }
 
     private static String systemDrive() {

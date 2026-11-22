@@ -51,6 +51,8 @@ That is roughly a **75x improvement** for the initial full-drive scan on the dev
 - RAM-backed folder browsing after indexing
 - Folder-size aggregation
 - Largest-files view
+- Largest-files selection applies cleanup eligibility before the 20-file limit,
+  so protected or otherwise ineligible files do not crowd out reviewable files
 - Live multi-term filtering by name, path, category, recommendation, file extension, and
   human-readable size predicates such as `size:>=500MB`
 - CSV export of the currently visible, filtered results
@@ -409,7 +411,8 @@ mvn clean package
 
 The test suite exercises the in-memory `SizeIndex` without requiring NTFS
 access. It covers normal ancestor aggregation, corrupt parent cycles, unresolved
-file sizes, bounded largest-file selection, the headless result-filtering
+file sizes, bounded largest-file selection, eligibility before limiting in both
+the recursive fallback and synthetic NTFS RAM-query paths, the headless result-filtering
 logic (including decimal size thresholds and inclusive/exclusive boundaries),
 malformed size-predicate feedback, file-only extension and compound-suffix filtering,
 and safe CSV export used by the JavaFX interface. CSV tests cover
