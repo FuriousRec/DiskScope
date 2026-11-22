@@ -7,7 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.PriorityQueue;
+import java.util.function.Predicate;
 
 public class DiskScanner {
 
@@ -197,6 +199,16 @@ public class DiskScanner {
     public static List<FileInfo> scanLargestFiles(
             File folder,
             int limit) {
+        return scanLargestFiles(folder, limit, ignored -> true);
+    }
+
+    /** Selects the largest eligible files; rejected files do not consume the limit. */
+    public static List<FileInfo> scanLargestFiles(
+            File folder,
+            int limit,
+            Predicate<FileInfo> eligibleFile) {
+
+        Objects.requireNonNull(eligibleFile, "eligibleFile");
 
         if (limit <= 0) {
             return List.of();
@@ -206,12 +218,10 @@ public class DiskScanner {
 
             List<FileInfo> fallbackFiles = StorageScanner.scanAllFiles(folder);
 
-            return new ArrayList<>(
-                    fallbackFiles.subList(
-                            0,
-                            Math.min(
-                                    limit,
-                                    fallbackFiles.size())));
+            return new ArrayList<>(fallbackFiles.stream()
+                    .filter(eligibleFile)
+                    .limit(limit)
+                    .toList());
         }
 
         Long folderId = findDirectoryId(folder);
@@ -260,6 +270,10 @@ public class DiskScanner {
                         Math.max(
                                 0L,
                                 child.sizeInBytes()));
+
+                if (!eligibleFile.test(fileInfo)) {
+                    continue;
+                }
 
                 largestFiles.add(fileInfo);
 

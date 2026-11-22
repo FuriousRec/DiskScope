@@ -6,6 +6,12 @@ public final class StoragePresentation {
     private StoragePresentation() {
     }
 
+    /** Path-only policy for ranking indexed files, without per-file filesystem I/O. */
+    public static boolean isCleanupCandidate(File item) {
+        StorageType type = StorageClassifier.classifyStorage(item);
+        return canShowAsCleanupCandidate(type) && !isProtectedSystemPath(item, type);
+    }
+
     public static View from(File item) {
         StorageType storageType = StorageClassifier.classifyStorage(item);
         CleanupAction cleanupAction = StorageClassifier.getCleanupAction(storageType);
