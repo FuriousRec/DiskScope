@@ -4,11 +4,13 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.function.Predicate;
 
 public class DiskScanner {
@@ -236,6 +238,7 @@ public class DiskScanner {
                         FileInfo::sizeInBytes));
 
         Deque<FolderNode> foldersToVisit = new ArrayDeque<>();
+        Set<Long> visitedDirectories = new HashSet<>();
 
         foldersToVisit.push(
                 new FolderNode(
@@ -246,6 +249,11 @@ public class DiskScanner {
         while (!foldersToVisit.isEmpty()) {
 
             FolderNode currentFolder = foldersToVisit.pop();
+            // NTFS root records can reference themselves; damaged metadata can
+            // also contain longer cycles. Expand each directory ID only once.
+            if (!visitedDirectories.add(currentFolder.fileId())) {
+                continue;
+            }
 
             for (MftEntry child : childrenByParentId.getOrDefault(
                     currentFolder.fileId(),
@@ -310,6 +318,7 @@ public class DiskScanner {
 
         List<FileInfo> files = new ArrayList<>();
         Deque<FolderNode> foldersToVisit = new ArrayDeque<>();
+        Set<Long> visitedDirectories = new HashSet<>();
 
         foldersToVisit.push(
                 new FolderNode(
@@ -319,6 +328,9 @@ public class DiskScanner {
         while (!foldersToVisit.isEmpty()) {
 
             FolderNode currentFolder = foldersToVisit.pop();
+            if (!visitedDirectories.add(currentFolder.fileId())) {
+                continue;
+            }
 
             for (MftEntry child : childrenByParentId.getOrDefault(
                     currentFolder.fileId(),

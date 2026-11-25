@@ -49,6 +49,7 @@ That is roughly a **75x improvement** for the initial full-drive scan on the dev
 - Java fallback scanner when raw NTFS access is unavailable
 - Cycle-safe fallback traversal that does not follow symbolic links
 - RAM-backed folder browsing after indexing
+- Cycle-safe NTFS file queries that expand each directory ID once, including self-referencing roots
 - Folder-size aggregation
 - Largest-files view
 - Largest-files selection applies cleanup eligibility before the 20-file limit,
@@ -410,7 +411,8 @@ mvn clean package
 ## Testing
 
 The test suite exercises the in-memory `SizeIndex` without requiring NTFS
-access. It covers normal ancestor aggregation, corrupt parent cycles, unresolved
+access. It covers normal ancestor aggregation, corrupt parent cycles, self-referencing
+roots and longer cycles in NTFS file queries, unresolved
 file sizes, bounded largest-file selection, eligibility before limiting in both
 the recursive fallback and synthetic NTFS RAM-query paths, the headless result-filtering
 logic (including decimal size thresholds and inclusive/exclusive boundaries),
