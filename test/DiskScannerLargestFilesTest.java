@@ -7,6 +7,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -43,6 +44,52 @@ class DiskScannerLargestFilesTest {
         installFastIndex();
         assertTrue(DiskScanner.isFastMode());
         assertLargestEligibleFiles();
+    }
+
+    @Test
+    void fastQueriesVisitSelfReferencingRootOnlyOnce() throws Exception {
+        installFastIndex();
+        Map<Long, List<MftEntry>> children = map("childrenByParentId");
+        List<MftEntry> rootChildren = new ArrayList<>(children.get(5L));
+        rootChildren.add(cycleReference(5, 5, "root"));
+        children.put(5L, rootChildren);
+        assertCycleSafeQueries();
+    }
+
+    @Test
+    void fastQueriesStopLongerDirectoryCyclesWithoutDuplicatingFiles() throws Exception {
+        installFastIndex();
+        Map<Long, List<MftEntry>> children = map("childrenByParentId");
+        List<MftEntry> nestedChildren = new ArrayList<>(children.get(6L));
+        nestedChildren.add(cycleReference(5, 6, "back-to-root"));
+        children.put(6L, nestedChildren);
+        assertCycleSafeQueries();
+    }
+
+    private void assertCycleSafeQueries() {
+        List<FileInfo> all = DiskScanner.scanAllFiles(root.toFile());
+        assertEquals(List.of("blocked-a.bin", "blocked-b.bin", "keep-large.bin",
+                "keep-medium.bin", "keep-small.bin"), names(all));
+        assertEquals(250L, all.stream().mapToLong(FileInfo::sizeInBytes).sum());
+        assertTrue(all.stream().noneMatch(file -> file.path().contains("back-to-root")));
+        assertEquals(List.of("blocked-a.bin", "blocked-b.bin", "keep-large.bin"),
+                names(DiskScanner.scanLargestFiles(root.toFile(), 3)));
+        assertEquals(List.of("keep-large.bin", "keep-medium.bin"),
+                names(DiskScanner.scanLargestFiles(root.toFile(), 2, ELIGIBLE)));
+    }
+
+    private static MftEntry cycleReference(long id, long parent, String name) {
+        return new MftEntry(id, parent, name, true) {
+            private int expansions;
+            @Override public long fileId() {
+                // Bound regressions even if a broken traversal ignores interruption:
+                // fail promptly rather than let the test JVM loop or exhaust memory.
+                if (++expansions > 100) {
+                    throw new AssertionError("Directory cycle was traversed repeatedly");
+                }
+                return super.fileId();
+            }
+        };
     }
 
     @Test
